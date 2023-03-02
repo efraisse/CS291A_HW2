@@ -44,6 +44,10 @@ def main():
     model.load(args.model_path, args.device)
     model = model.to(args.device)
 
+    # TODO Train model on train_load
+    att = AdversarialTrainingThing(model, eps, beta, k)
+    att.train(train_loader)
+
     ## Make sure the model is in `eval` mode.
     model.eval()
     
