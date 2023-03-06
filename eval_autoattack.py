@@ -91,13 +91,13 @@ def main():
     for epoch in range(nepochs):
       loss = 0
 
-      pbar = tqdm(total=len(train_loader))
-      for X, y in train_loader:
-          X, y = X.to(args.device), y.to(args.device)
-          loss = att.train_step(model, X, y)
-          
-          pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
-          pbar.update(1)
+      with tqdm(total=len(train_loader)) as pbar:
+          for X, y in train_loader:
+              X, y = X.to(args.device), y.to(args.device)
+              loss = att.train_step(model, X, y)
+              
+              pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
+              pbar.update(1)
 
       calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
       print(f"Finished epoch {epoch}/{nepochs}")

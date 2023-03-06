@@ -6,3 +6,9 @@ CS291A Adversarial AI course
  - Mixup paper: https://arxiv.org/pdf/1710.09412.pdf
  - Fixing data augmentation to improve robustness: https://arxiv.org/pdf/2103.01946.pdf
  - SOTA models: https://robustbench.github.io/
+
+## First test
+Trained for 5 epochs
+Clean accuracy: 0.5196
+Robust accuracy 0.1742
+
