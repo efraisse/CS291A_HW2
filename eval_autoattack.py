@@ -7,6 +7,8 @@ import data_util
 import model_util
 import attack_util
 
+from attack_util import ctx_noparamgrad
+
 
 def parse_args():
     '''Parse input arguments'''
@@ -35,6 +37,37 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def calculate_clean_and_robust_accuracy(attacker, model, dataloader, device):
+    clean_correct_num = 0
+    robust_correct_num = 0
+    total = 0
+
+    pbar = tqdm(total=len(dataloader))
+    for X, y in dataloader:
+        X, y = X.to(device), y.to(device)
+        batch_size = X.size(0)
+        total += batch_size
+
+        with ctx_noparamgrad(model):
+            ### clean accuracy
+            predictions = model(X)
+            clean_correct_num += torch.sum(torch.argmax(predictions, dim = -1) == y).item()
+
+            ### robust accuracy
+            # generate perturbation
+            perturbed_data = attacker.perturb(model, X, y) + X
+
+            # predict
+            predictions = model(perturbed_data)
+            robust_correct_num += torch.sum(torch.argmax(predictions, dim=-1) == y).item()
+
+        pbar.update(1)
+
+    clean_accuracy = clean_correct_num / total
+    robust_accuracy = robust_correct_num / total
+    print(f"Total number of images: {total}\nClean accuracy: {clean_accuracy}\nRobust accuracy {robust_accuracy}")
+    return (clean_accuracy, robust_accuracy)
+
 
 def main():
     args = parse_args()
@@ -46,8 +79,14 @@ def main():
     model.load(args.model_path, args.device)
     model = model.to(args.device)
 
+    # TODO Add params from args
     att = attack_util.AT()
     nepochs = 5
+
+    # TODO Add params from args
+    pgd_attack = attack_util.PGDAttack()
+
+    calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
 
     for epoch in range(nepochs):
       loss = 0
