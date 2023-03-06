@@ -99,6 +99,7 @@ def main():
           pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
           pbar.update(1)
 
+      calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
       print(f"Finished epoch {epoch}/{nepochs}")
 
     ## Make sure the model is in `eval` mode.
