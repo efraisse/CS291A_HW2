@@ -1,6 +1,7 @@
 import argparse
 
 import torch
+from tqdm import tqdm
 
 import data_util
 import model_util
@@ -47,10 +48,19 @@ def main():
 
     att = attack_util.AT()
     nepochs = 5
+
     for epoch in range(nepochs):
-        for X, y in train_loader:
-            att.train_step(model, X, y)
-        print(f"Finished epoch {epoch}/{nepochs}")
+      loss = 0
+
+      pbar = tqdm(total=len(train_loader))
+      for X, y in train_loader:
+          X, y = X.to(args.device), y.to(args.device)
+          loss = att.train_step(model, X, y)
+          
+          pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
+          pbar.update(1)
+
+      print(f"Finished epoch {epoch}/{nepochs}")
 
     ## Make sure the model is in `eval` mode.
     model.eval()

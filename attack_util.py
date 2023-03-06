@@ -285,7 +285,7 @@ class AT():
         optimizer.step()
 
         # print statistics
-        print(loss.item())
+        return loss.item()
 
 
 """"
