@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import time
+import torch.optim as optim
 
 ### Do not modif the following codes
 class ctx_noparamgrad(object):
@@ -30,6 +31,31 @@ def set_param_grad_state(module, grad_state):
         param.requires_grad = grad_state[param]
 ### Ends
 
+"""
+def perturb(self, model: nn.Module, X, y):
+        delta = torch.zeros_like(X)
+        delta.requires_grad = True
+
+        for i in range (0, self.attack_step):
+            cel = 0
+            if self.loss_type == 'cw':
+                cel = self.cw_loss(model(X + delta), y)
+            else:
+                cel = self.ce_loss(model(X + delta), y)
+
+            gradient_delta = torch.autograd.grad(outputs = cel, inputs = delta, allow_unused = True)
+            sign = torch.sign(gradient_delta[0])
+            delta_prime = delta - self.alpha * sign
+
+            delta_prime = torch.where(delta_prime > self.eps, self.eps, delta_prime)
+            delta_prime = torch.where(delta_prime < -self.eps, -self.eps, delta_prime)
+
+            delta = delta_prime
+
+        return delta
+"""
+
+    
 
 ### PGD Attack
 class PGDAttack():
@@ -235,6 +261,31 @@ class FGSMAttack():
     def perturb(self, model: nn.Module, X, y):
         return self._pgd_attack.perturb(model, X, y)
 
+
+class AT():
+    """
+    """
+    def __init__(self, lr=0.001, alpha=2/255, eps=8/255, steps=10, momentum=0.9):
+        self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha)
+        self.criterion = nn.CrossEntropyLoss()
+        self.lr = lr
+        self.momentum = momentum
+
+    def train_step(self, model, X, y):
+        delta = self._pgd_attack.perturb(model, X, y)
+
+        # zero the parameter gradients
+        optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum)
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = model(X + delta)
+        loss = self.criterion(outputs, y)
+        loss.backward()
+        optimizer.step()
+
+        # print statistics
+        print(loss.item())
 
 
 """"

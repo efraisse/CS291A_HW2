@@ -4,6 +4,7 @@ import torch
 
 import data_util
 import model_util
+import attack_util
 
 
 def parse_args():
@@ -44,25 +45,28 @@ def main():
     model.load(args.model_path, args.device)
     model = model.to(args.device)
 
-    # TODO Train model on train_load
-    att = AdversarialTrainingThing(model, eps, beta, k)
-    att.train(train_loader)
+    att = attack_util.AT()
+    nepochs = 5
+    for epoch in range(nepochs):
+        for X, y in train_loader:
+            att.train_step(model, X, y)
+        print(f"Finished epoch {epoch}/{nepochs}")
 
     ## Make sure the model is in `eval` mode.
     model.eval()
     
-    eps = args.eps / 255
-    # load attack 
-    from autoattack import AutoAttack
-    adversary = AutoAttack(model, norm=args.norm, eps=eps, log_path=args.log_path,
-        version='standard', device=args.device)
-    
-    l = [x for (x, y) in test_loader]
-    x_test = torch.cat(l, 0)
-    l = [y for (x, y) in test_loader]
-    y_test = torch.cat(l, 0)
-    
-    adv_complete = adversary.run_standard_evaluation(x_test, y_test, bs=args.batch_size)
+    # eps = args.eps / 255
+    # # load attack 
+    # from autoattack import AutoAttack
+    # adversary = AutoAttack(model, norm=args.norm, eps=eps, log_path=args.log_path,
+    #     version='standard', device=args.device)
+    # 
+    # l = [x for (x, y) in test_loader]
+    # x_test = torch.cat(l, 0)
+    # l = [y for (x, y) in test_loader]
+    # y_test = torch.cat(l, 0)
+    # 
+    # adv_complete = adversary.run_standard_evaluation(x_test, y_test, bs=args.batch_size)
 
 
 if __name__ == "__main__":
