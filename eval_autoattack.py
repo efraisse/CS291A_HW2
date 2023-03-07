@@ -9,7 +9,6 @@ import attack_util
 
 from attack_util import ctx_noparamgrad
 
-
 def parse_args():
     '''Parse input arguments'''
     
@@ -78,10 +77,15 @@ def main():
     model.normalize = norm_layer
     model.load(args.model_path, args.device)
     model = model.to(args.device)
+    
+    #model.eval()
+    
+    prev_robust = []
+    prev_clean = []
 
     # TODO Add params from args
     att = attack_util.AT()
-    nepochs = 5
+    nepochs = 25
 
     # TODO Add params from args
     pgd_attack = attack_util.PGDAttack()
@@ -99,12 +103,35 @@ def main():
               pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
               pbar.update(1)
 
-      calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
-      print(f"Finished epoch {epoch}/{nepochs}")
+      clean_accuracy, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
+    
+      # early stopping, making sure that if last 2 validation robust accuracies are greater
+      # we stop the model early and save it to prevent overfitting
+      if len(prev_robust) >= 2 and len(prev_clean) >= 2:
+          if min(prev_robust) > robust_accuracy and min(prev_clean) > clean_accuracy:
+              break
+          prev_robust = prev_robust[1: len(prev_robust)]
+          prev_robust.append(robust_accuracy)
+          prev_clean = prev_clean[1: len(prev_clean)]
+          prev_clean.append(clean_accuracy)
+      else:
+          prev_robust.append(robust_accuracy)
+          prev_clean.append(clean_accuracy)
+          
+      torch.save(model, "CS291A_PGD10_model_best.pth")
+          
+      print(f"Finished epoch {epoch + 1}/{nepochs}")
 
+    torch.save(model, "CS291A_PGD10_model_best.pth")
+    
     ## Make sure the model is in `eval` mode.
     model.eval()
     
+    pgd_attack = attack_util.PGDAttack(attack_step = 50)
+        
+    calculate_clean_and_robust_accuracy(pgd_attack, model, test_loader, args.device)
+    
+    # part 2 of the assignment
     # eps = args.eps / 255
     # # load attack 
     # from autoattack import AutoAttack

@@ -265,7 +265,7 @@ class FGSMAttack():
 class AT():
     """
     """
-    def __init__(self, lr=0.001, alpha=2/255, eps=8/255, steps=10, momentum=0.9):
+    def __init__(self, lr=0.0001, alpha=2/255, eps=8/255, steps=10, momentum=0.9):
         self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha)
         self.criterion = nn.CrossEntropyLoss()
         self.lr = lr
@@ -275,7 +275,8 @@ class AT():
         delta = self._pgd_attack.perturb(model, X, y)
 
         # zero the parameter gradients
-        optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum)
+        # optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum)
+        optimizer = optim.Adam(model.parameters(), lr=self.lr)
         optimizer.zero_grad()
 
         # forward + backward + optimize
