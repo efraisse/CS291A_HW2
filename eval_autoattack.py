@@ -68,7 +68,7 @@ def calculate_clean_and_robust_accuracy(attacker, model, dataloader, device):
     return (clean_accuracy, robust_accuracy)
 
 
-def main():
+def main(): 
     args = parse_args()
     
     # Load data
@@ -85,7 +85,7 @@ def main():
 
     # TODO Add params from args
     att = attack_util.AT()
-    nepochs = 25
+    nepochs = 50
 
     # TODO Add params from args
     pgd_attack = attack_util.PGDAttack()
@@ -107,7 +107,7 @@ def main():
     
       # early stopping, making sure that if last 2 validation robust accuracies are greater
       # we stop the model early and save it to prevent overfitting
-      if len(prev_robust) >= 2 and len(prev_clean) >= 2:
+      if len(prev_robust) >= 3 and len(prev_clean) >= 3:
           if min(prev_robust) > robust_accuracy and min(prev_clean) > clean_accuracy:
               break
           prev_robust = prev_robust[1: len(prev_robust)]
@@ -118,13 +118,13 @@ def main():
           prev_robust.append(robust_accuracy)
           prev_clean.append(clean_accuracy)
           
-      torch.save(model, "CS291A_PGD10_model_best.pth")
+      torch.save(model, "CS291A_PGD10_model_SGD_001.pth")
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
 
-    torch.save(model, "CS291A_PGD10_model_best.pth")
+    torch.save(model, "CS291A_PGD10_model_SGD_001.pth")
     
-    ## Make sure the model is in `eval` mode.
+    ## Make sure the model is in `epval` mode.
     model.eval()
     
     pgd_attack = attack_util.PGDAttack(attack_step = 50)
