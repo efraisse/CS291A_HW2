@@ -26,7 +26,7 @@ def parse_args():
         '--model_path', default='resnet_cifar10.pth', help='Filepath to the trained model'
     )
     parser.add_argument(
-        '--batch_size', type=int, default=1024, help='Batch size for attack'
+        '--batch_size', type=int, default=128, help='Batch size for attack'
     )
     parser.add_argument(
         '--log_path', type=str, default='./log_file.txt'
@@ -72,7 +72,7 @@ def main():
     args = parse_args()
     
     # Load data
-    train_loader, val_loader, test_loader, norm_layer = data_util.cifar10_dataloader(data_dir=args.data_dir)
+    train_loader, val_loader, test_loader, norm_layer = data_util.cifar10_dataloader(batch_size = args.batch_size, data_dir=args.data_dir)
     model = model_util.ResNet18(num_classes=10)
     model.normalize = norm_layer
     model.load(args.model_path, args.device)
@@ -80,17 +80,17 @@ def main():
     
     #model.eval()
     
-    prev_robust = []
-    prev_clean = []
+    # prev_robust = []
+    # prev_clean = []
 
     # TODO Add params from args
-    att = attack_util.AT()
-    nepochs = 50
+    att = attack_util.AT(model = model)
+    nepochs = 100
 
     # TODO Add params from args
     pgd_attack = attack_util.PGDAttack()
 
-    calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
+    calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
 
     for epoch in range(nepochs):
       loss = 0
@@ -103,33 +103,34 @@ def main():
               pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
               pbar.update(1)
 
-      clean_accuracy, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, model, val_loader, args.device)
+      clean_accuracy, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
     
       # early stopping, making sure that if last 2 validation robust accuracies are greater
       # we stop the model early and save it to prevent overfitting
-      if len(prev_robust) >= 3 and len(prev_clean) >= 3:
-          if min(prev_robust) > robust_accuracy and min(prev_clean) > clean_accuracy:
-              break
-          prev_robust = prev_robust[1: len(prev_robust)]
-          prev_robust.append(robust_accuracy)
-          prev_clean = prev_clean[1: len(prev_clean)]
-          prev_clean.append(clean_accuracy)
-      else:
-          prev_robust.append(robust_accuracy)
-          prev_clean.append(clean_accuracy)
+    #   if len(prev_robust) >= 50 and len(prev_clean) >= 50:
+    #       if min(prev_robust) > robust_accuracy and min(prev_clean) > clean_accuracy:
+    #           break
+    #       prev_robust = prev_robust[1: len(prev_robust)]
+    #       prev_robust.append(robust_accuracy)
+    #       prev_clean = prev_clean[1: len(prev_clean)]
+    #       prev_clean.append(clean_accuracy)
+    #   else:
+    #       prev_robust.append(robust_accuracy)
+    #       prev_clean.append(clean_accuracy)
           
-      torch.save(model, "CS291A_PGD10_model_SGD_001.pth")
+      torch.save(att.model, "CS291A_PGD10_128_UNIEPS_5e-4_0.1.pth")
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
+      att.schedule.step()
 
-    torch.save(model, "CS291A_PGD10_model_SGD_001.pth")
+    torch.save(att.model, "CS291A_PGD10_128_UNIEPS_5e-4_0.1.pth")
     
-    ## Make sure the model is in `epval` mode.
-    model.eval()
-    
+    ## Make sure the model is in `eval` mode.
+    att.model.eval()
+
     pgd_attack = attack_util.PGDAttack(attack_step = 50)
         
-    calculate_clean_and_robust_accuracy(pgd_attack, model, test_loader, args.device)
+    calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
     
     # part 2 of the assignment
     # eps = args.eps / 255

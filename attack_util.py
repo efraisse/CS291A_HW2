@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import time
 import torch.optim as optim
+from SGD import SGD_GC
 
 ### Do not modif the following codes
 class ctx_noparamgrad(object):
@@ -214,7 +215,8 @@ class PGDAttack():
         """
         # Initialize perturbation. Setting requires_grad to True lets us
         # take the gradient of the attack loss w.r.t. delta.
-        delta = torch.zeros_like(X, requires_grad=True)
+        # delta = torch.zeros_like(X, requires_grad=True)
+        delta = torch.rand(X.shape, requires_grad=True) * self._eps
         
         for it in range(self._attack_step):
             # Compute attack loss and get gradient
@@ -265,25 +267,27 @@ class FGSMAttack():
 class AT():
     """
     """
-    def __init__(self, lr=0.01, alpha=2/255, eps=8/255, steps=10, momentum=0.9):
+    def __init__(self, lr=0.1, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None):
         self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha)
         self.criterion = nn.CrossEntropyLoss()
         self.lr = lr
         self.momentum = momentum
+        self.model = model
+        self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
+        #self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[40,70], gamma=0.1)
 
     def train_step(self, model, X, y):
         delta = self._pgd_attack.perturb(model, X, y)
-
+        
         # zero the parameter gradients
-        optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum)
-        # optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        optimizer.zero_grad()
+        self.optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = model(X + delta)
+        outputs = self.model(X + delta)
         loss = self.criterion(outputs, y)
         loss.backward()
-        optimizer.step()
+        self.optimizer.step()
 
         # print statistics
         return loss.item()
