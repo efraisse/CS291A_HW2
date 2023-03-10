@@ -84,11 +84,11 @@ def main():
     # prev_clean = []
 
     # TODO Add params from args
-    att = attack_util.AT(model = model)
+    att = attack_util.AT(model = model, device = args.device)
     nepochs = 100
 
     # TODO Add params from args
-    pgd_attack = attack_util.PGDAttack()
+    pgd_attack = attack_util.PGDAttack(device = args.device)
 
     calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
 
@@ -118,12 +118,12 @@ def main():
     #       prev_robust.append(robust_accuracy)
     #       prev_clean.append(clean_accuracy)
           
-      torch.save(att.model, "CS291A_PGD10_128_UNIEPS_5e-4_0.1.pth")
+      torch.save(att.model, "CS291A_PGD10_128_UNIEPS_2e-4_0.1.pth")
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
       att.schedule.step()
 
-    torch.save(att.model, "CS291A_PGD10_128_UNIEPS_5e-4_0.1.pth")
+    torch.save(att.model, "CS291A_PGD10_128_UNIEPS_2e-4_0.1.pth")
     
     ## Make sure the model is in `eval` mode.
     att.model.eval()

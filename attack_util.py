@@ -61,7 +61,7 @@ def perturb(self, model: nn.Module, X, y):
 ### PGD Attack
 class PGDAttack():
     def __init__(self, attack_step=10, eps=8 / 255, alpha=2 / 255, loss_type='ce', targeted=True, 
-                 num_classes=10):
+                 num_classes=10, device = "cuda:0"):
         '''
         attack_step: number of PGD iterations
         eps: attack budget
@@ -74,7 +74,8 @@ class PGDAttack():
         self._targeted = targeted
         self._loss_fn = self.ce_loss if loss_type == 'ce' else self.cw_loss
         self._num_classes = num_classes
-
+        self._device = device
+        
     def ce_loss(self, logits, y):
         """
         Args:
@@ -216,7 +217,8 @@ class PGDAttack():
         # Initialize perturbation. Setting requires_grad to True lets us
         # take the gradient of the attack loss w.r.t. delta.
         # delta = torch.zeros_like(X, requires_grad=True)
-        delta = torch.rand(X.shape, requires_grad=True) * self._eps
+        delta = torch.cuda.FloatTensor(*X.shape, device = self._device).uniform_() * self._eps
+        delta.requires_grad = True
         
         for it in range(self._attack_step):
             # Compute attack loss and get gradient
@@ -267,8 +269,8 @@ class FGSMAttack():
 class AT():
     """
     """
-    def __init__(self, lr=0.1, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None):
-        self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha)
+    def __init__(self, lr=0.1, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None, device = "cuda:0"):
+        self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha, device = device)
         self.criterion = nn.CrossEntropyLoss()
         self.lr = lr
         self.momentum = momentum
