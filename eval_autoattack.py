@@ -75,60 +75,53 @@ def main():
     train_loader, val_loader, test_loader, norm_layer = data_util.cifar10_dataloader(batch_size = args.batch_size, data_dir=args.data_dir)
     model = model_util.ResNet18(num_classes=10)
     model.normalize = norm_layer
+    # model = torch.load(args.model_path, args.device)
     model.load(args.model_path, args.device)
     model = model.to(args.device)
     
-    model.eval()
-    
-    # prev_robust = []
-    # prev_clean = []
+    # model.eval()
 
     # TODO Add params from args
     att = attack_util.AT(model = model, device = args.device)
     nepochs = 100
+    
+    max_robust = 0
 
     # TODO Add params from args
-    pgd_attack = attack_util.PGDAttack(device = args.device)
+    # PGD
+    # pgd_attack = attack_util.PGDAttack(device = args.device)
+    pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
     calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
 
-    # for epoch in range(nepochs):
-    #   loss = 0
+    for epoch in range(nepochs):
+      loss = 0
 
-    #   with tqdm(total=len(train_loader)) as pbar:
-    #       for X, y in train_loader:
-    #           X, y = X.to(args.device), y.to(args.device)
-    #           loss = att.train_step(model, X, y)
+      with tqdm(total=len(train_loader)) as pbar:
+          for X, y in train_loader:
+              X, y = X.to(args.device), y.to(args.device)
+              loss = att.train_step(model, X, y)
               
-    #           pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
-    #           pbar.update(1)
+              pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
+              pbar.update(1)
 
-    #   clean_accuracy, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
-    
-    #   # early stopping, making sure that if last 2 validation robust accuracies are greater
-    #   # we stop the model early and save it to prevent overfitting
-    # #   if len(prev_robust) >= 50 and len(prev_clean) >= 50:
-    # #       if min(prev_robust) > robust_accuracy and min(prev_clean) > clean_accuracy:
-    # #           break
-    # #       prev_robust = prev_robust[1: len(prev_robust)]
-    # #       prev_robust.append(robust_accuracy)
-    # #       prev_clean = prev_clean[1: len(prev_clean)]
-    # #       prev_clean.append(clean_accuracy)
-    # #   else:
-    # #       prev_robust.append(robust_accuracy)
-    # #       prev_clean.append(clean_accuracy)
+      _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
           
-    #   torch.save(att.model, "CS291A_PGD10_128_UNIEPS_2e-4_0.1.pth")
+      if robust_accuracy > max_robust:  
+        att.model.save("fgsm_128_decay5e-4_unieps_lr0.39.pth")
+        max_robust = robust_accuracy
           
-    #   print(f"Finished epoch {epoch + 1}/{nepochs}")
-    #   att.schedule.step()
+      print(f"Finished epoch {epoch + 1}/{nepochs}")
+      att.schedule.step()
 
-    # torch.save(att.model, "CS291A_PGD10_128_UNIEPS_2e-4_0.1.pth")
+    if robust_accuracy > max_robust:  
+        att.model.save("fgsm_128_decay5e-4_unieps_lr0.39.pth")
+        max_robust = robust_accuracy
     
-    # ## Make sure the model is in `eval` mode.
-    # att.model.eval()
+    ## Make sure the model is in `eval` mode.
+    att.model.eval()
 
-    # pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device)
+    pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device)
         
     # calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
     
