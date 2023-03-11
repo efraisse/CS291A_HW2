@@ -217,8 +217,8 @@ class PGDAttack():
         # Initialize perturbation. Setting requires_grad to True lets us
         # take the gradient of the attack loss w.r.t. delta.
         # delta = torch.zeros_like(X, requires_grad=True)
-        delta = torch.cuda.FloatTensor(*X.shape, device = self._device).uniform_() * self._eps
-        delta.requires_grad = True
+        # delta = torch.cuda.FloatTensor(*X.shape, device = self._device).uniform_() * self._eps
+        # delta.requires_grad = True
         
         for it in range(self._attack_step):
             # Compute attack loss and get gradient
