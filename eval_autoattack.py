@@ -89,8 +89,8 @@ def main():
 
     # TODO Add params from args
     # PGD
-    # pgd_attack = attack_util.PGDAttack(device = args.device)
-    pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
+    pgd_attack = attack_util.PGDAttack(device = args.device)
+    # pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
     calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
 
@@ -108,14 +108,14 @@ def main():
       _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
           
       if robust_accuracy > max_robust:  
-        att.model.save("fgsm_128_decay5e-4_unieps_lr0.39.pth")
+        att.model.save("fgsm_128_decay5e-4_unieps_lr0.1_40-50-65.pth")
         max_robust = robust_accuracy
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
       att.schedule.step()
 
     if robust_accuracy > max_robust:  
-        att.model.save("fgsm_128_decay5e-4_unieps_lr0.39.pth")
+        att.model.save("fgsm_128_decay5e-4_unieps_lr0.1_40-50-65.pth")
         max_robust = robust_accuracy
     
     ## Make sure the model is in `eval` mode.
@@ -123,7 +123,7 @@ def main():
 
     pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device)
         
-    # calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
+    calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
     
     # part 2 of the assignment
     # eps = args.eps / 255

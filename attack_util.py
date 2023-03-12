@@ -216,13 +216,13 @@ class PGDAttack():
         """
         # Initialize perturbation. Setting requires_grad to True lets us
         # take the gradient of the attack loss w.r.t. delta.
-        # delta = torch.zeros_like(X, requires_grad=True)
+        delta = torch.zeros_like(X, requires_grad=True)
         
         # we tried initializing delta to a uniform distribution but it didn't work
         # as well as we had hoped to boost the robust accuracy for PGD
         # perhaps this will help for FGSM however?
-        delta = torch.cuda.FloatTensor(*X.shape, device = self._device).uniform_() * self._eps
-        delta.requires_grad = True
+        # delta = torch.cuda.FloatTensor(*X.shape, device = self._device).uniform_() * self._eps
+        # delta.requires_grad = True
         
         for it in range(self._attack_step):
             # Compute attack loss and get gradient
@@ -273,16 +273,16 @@ class FGSMAttack():
 class AT():
     """
     """
-    def __init__(self, lr=0.39, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None, device = "cuda:0"):
-        #self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha, device = device)
-        self._pgd_attack = PGDAttack(eps=eps, attack_step=1, alpha=eps, device = device)
+    def __init__(self, lr=0.1, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None, device = "cuda:0"):
+        self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha, device = device)
+        #self._pgd_attack = PGDAttack(eps=eps, attack_step=1, alpha=eps, device = device)
         self.criterion = nn.CrossEntropyLoss()
         self.lr = lr
         self.momentum = momentum
         self.model = model
         self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
         # self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
-        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[40,70], gamma=0.1)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[40,50,65], gamma=0.1)
 
     def train_step(self, model, X, y):
         delta = self._pgd_attack.perturb(model, X, y)
