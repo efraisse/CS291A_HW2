@@ -74,7 +74,7 @@ def extract_data_from_log(logfile, starting_string, ending_string):
 
     return output
 
-def create_plot_from_extracted_data(extracted_data):
+def create_plot_from_extracted_data(extracted_data, title):
     epochs = [datapoint['epoch_num'] for datapoint in extracted_data]
     loss = [datapoint['loss'] for datapoint in extracted_data]
     clean_accuracy = [datapoint['clean_accuracy'] for datapoint in extracted_data]
@@ -99,12 +99,14 @@ def create_plot_from_extracted_data(extracted_data):
     accuracy_axis.set_ylim([0,1])
 
     # Add y-labels
-    loss_axis.set_ylabel('Training loss')  # Add a y-label to the axes.
-    accuracy_axis.set_ylabel('Accuracy (on val set)')  # Add a y-label to the axes.
+    loss_axis.set_ylabel('Training loss')
+    accuracy_axis.set_ylabel('Accuracy (on val set)')
 
     # Add titles
-    loss_axis.set_title("Training loss vs epoch")  # Add a title to the axes.
-    accuracy_axis.set_title("Accuracy vs epoch")  # Add a title to the axes.
+    loss_axis.set_title("Training loss vs epoch")
+    accuracy_axis.set_title("Accuracy vs epoch")
+
+    fig.suptitle(title)
 
     # Add legends
     loss_axis.legend()
@@ -112,6 +114,35 @@ def create_plot_from_extracted_data(extracted_data):
 
     plt.show()
 
-# 0 eps
-pgd10_0eps_weight_decay_5_extracted_data = extract_data_from_log("outputs_from_128_batch_models.txt", "PGD10 0eps 5e-4 weight_decay", "PGD10 unieps 5e-4 weight_decay")
-create_plot_from_extracted_data(pgd10_0eps_weight_decay_5_extracted_data)
+def build_plots(plot_cfg):
+    experiment_markers = plot_cfg['experiment_markers']
+    experiment_marker_to_title = plot_cfg['experiment_marker_to_title']
+    log_path = plot_cfg['log_path']
+
+    # Note that "END_OF_STUFF" was manually inserted at the end of the log to mark the log's end
+    experiment_markers += ["END_OF_STUFF"]
+
+    for beginning_of_experiment_marker, end_of_experiment_marker in zip(experiment_markers, experiment_markers[1:]):
+        extracted_data = extract_data_from_log(
+            log_path, beginning_of_experiment_marker, end_of_experiment_marker)
+        title = experiment_marker_to_title[beginning_of_experiment_marker]
+        create_plot_from_extracted_data(extracted_data, title)
+
+# All of the log configs. To create plots for a new log, just make a new config
+# following this format
+TWO_STEP_SCHEDULE_BEST_HPARAMS_CFG = {
+    'experiment_markers': [
+        "pgd 128 decay5e-4 0eps lr 0.1",
+        "pgd 256 decay5e-4 0eps lr 0.2",
+        "fgsm 128 decay 5e-4 unieps lr 0.39"],
+    
+    'experiment_marker_to_title': {
+        "pgd 128 decay5e-4 0eps lr 0.1": "10-step PGD (weight decay=5e-4, initial_lr=0.1, batch_size=128)",
+        "pgd 256 decay5e-4 0eps lr 0.2": "10-step PGD (weight decay=5e-4, initial_lr=0.2, batch_size=256)",
+        "fgsm 128 decay 5e-4 unieps lr 0.39": "Fast AT (weight decay=5e-4, initial_lr=0.39, batch_size=128)",
+    },
+
+    'log_path': "two_step_schedule_best_hparams.txt"
+}
+
+build_plots(TWO_STEP_SCHEDULE_BEST_HPARAMS_CFG)
