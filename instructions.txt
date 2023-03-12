@@ -1,0 +1,10 @@
+tmux copying instuctions
+-ctrl + b + [
+-ctrl + space
+-scroll highlight
+-ctrl + W
+-open vim test or something
+-insert mode
+-ctrl + b + ]
+-esc + :x
+-grab the file info and paste in another file
