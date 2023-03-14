@@ -83,8 +83,8 @@ def main():
     # model.eval()
 
     # TODO Add params from args
-    att = attack_util.AT(model = model, device = args.device, steps = 20)
-    nepochs = 10
+    att = attack_util.AT(model = model, device = args.device, steps = 10)
+    nepochs = 50
     
     max_robust = 0
 
@@ -93,16 +93,16 @@ def main():
     pgd_attack = attack_util.PGDAttack(device = args.device)
     # pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
-    # calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
+    calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
 
     for epoch in range(nepochs):
       loss = 0
 
-    # with tqdm(total=len(train_loader)) as pbar:
-          # for X, y in train_loader:
+      with tqdm(total=len(train_loader)) as pbar:
+          for X, y in train_loader:
           
-      with tqdm(total=len(semisup_train_loader)) as pbar:
-          for X, y in semisup_train_loader:
+    #   with tqdm(total=len(semisup_train_loader)) as pbar:
+    #       for X, y in semisup_train_loader:
               X, y = X.to(args.device), y.to(args.device)
               loss = att.train_step(model, X, y)
               
@@ -112,14 +112,14 @@ def main():
       _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
           
       if robust_accuracy > max_robust:  
-        att.model.save("semisup_model_pgd20.pth")
+        att.model.save("semisup_model_pgd10_TRADES_ogdata.pth")
         max_robust = robust_accuracy
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
       att.schedule.step()
 
     if robust_accuracy > max_robust:  
-        att.model.save("semisup_model_pgd20.pth")
+        att.model.save("semisup_model_pgd10_TRADES_ogdata.pth")
         max_robust = robust_accuracy
     
     ## Make sure the model is in `eval` mode.

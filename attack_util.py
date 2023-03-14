@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import time
 import torch.optim as optim
 from SGD import SGD_GC
+import trades
 
 ### Do not modif the following codes
 class ctx_noparamgrad(object):
@@ -282,7 +283,8 @@ class AT():
         self.model = model
         self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
         # self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
-        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[1,2,3], gamma=0.1)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[20,35,43], gamma=0.1)
+        self.device = device
 
     def train_step(self, model, X, y):
         delta = self._pgd_attack.perturb(model, X, y)
@@ -292,7 +294,17 @@ class AT():
 
         # forward + backward + optimize
         outputs = self.model(X + delta)
-        loss = self.criterion(outputs, y)
+        # loss = self.criterion(outputs, y)
+        loss = trades.trades_loss(model=model,
+                           x_natural=X,
+                           y=y,
+                           optimizer=self.optimizer,
+                           step_size=self._pgd_attack._alpha,
+                           epsilon=self._pgd_attack._eps,
+                           perturb_steps=self._pgd_attack._attack_step,
+                           beta=5,
+			               distance='l_inf',
+                           device = self.device)
         loss.backward()
         self.optimizer.step()
 
