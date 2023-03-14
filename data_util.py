@@ -1,8 +1,9 @@
+from semisup_util import PseudoLabelDataset
 from torchvision.datasets import CIFAR10
 from torch.utils.data import DataLoader, Subset
 import torch
 from torchvision import transforms
-
+from torchvision.io import read_image
 
 class NormalizeByChannelMeanStd(torch.nn.Module):
     def __init__(self, mean, std):
@@ -50,3 +51,35 @@ def cifar10_dataloader(batch_size=64, data_dir='./data/', val_ratio=0.1):
         mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
     
     return train_loader, val_loader, test_loader, dataset_normalization
+
+def ti500k_dataloader(batch_size=64):
+    '''Tiny Images 500k dataloader for training and testing'''
+    
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+    ])
+
+    custom_train_dataset = PseudoLabelDataset(transform = train_transform)
+    custom_dataset_len = len(custom_train_dataset)
+    
+    train_set = Subset(custom_train_dataset, list(range(custom_dataset_len)))
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    
+    return train_loader
+
+# if __name__ == "__main__":
+#     print("hello")
+    
+#     train_loader = ti500k_dataloader(1)
+    
+#     print(train_loader)
+    
+#     for x, y in train_loader:
+#         print(x)
+        
+#         raise
+    
+

@@ -282,7 +282,7 @@ class AT():
         self.model = model
         self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
         # self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
-        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[40,50,65], gamma=0.1)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[1,2,3], gamma=0.1)
 
     def train_step(self, model, X, y):
         delta = self._pgd_attack.perturb(model, X, y)

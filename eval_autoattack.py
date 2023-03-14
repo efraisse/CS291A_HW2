@@ -1,11 +1,12 @@
+import data_util
 import argparse
 
 import torch
 from tqdm import tqdm
 
-import data_util
 import model_util
 import attack_util
+from autoattack import AutoAttack
 
 from attack_util import ctx_noparamgrad
 
@@ -72,18 +73,18 @@ def main():
     args = parse_args()
     
     # Load data
+    semisup_train_loader = data_util.ti500k_dataloader(batch_size = args.batch_size)
     train_loader, val_loader, test_loader, norm_layer = data_util.cifar10_dataloader(batch_size = args.batch_size, data_dir=args.data_dir)
     model = model_util.ResNet18(num_classes=10)
     model.normalize = norm_layer
-    # model = torch.load(args.model_path, args.device)
     model.load(args.model_path, args.device)
     model = model.to(args.device)
     
     # model.eval()
 
     # TODO Add params from args
-    att = attack_util.AT(model = model, device = args.device)
-    nepochs = 100
+    att = attack_util.AT(model = model, device = args.device, steps = 20)
+    nepochs = 10
     
     max_robust = 0
 
@@ -92,13 +93,16 @@ def main():
     pgd_attack = attack_util.PGDAttack(device = args.device)
     # pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
-    calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
+    # calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
 
     for epoch in range(nepochs):
       loss = 0
 
-      with tqdm(total=len(train_loader)) as pbar:
-          for X, y in train_loader:
+    # with tqdm(total=len(train_loader)) as pbar:
+          # for X, y in train_loader:
+          
+      with tqdm(total=len(semisup_train_loader)) as pbar:
+          for X, y in semisup_train_loader:
               X, y = X.to(args.device), y.to(args.device)
               loss = att.train_step(model, X, y)
               
@@ -108,35 +112,35 @@ def main():
       _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
           
       if robust_accuracy > max_robust:  
-        att.model.save("fgsm_128_decay5e-4_unieps_lr0.1_40-50-65.pth")
+        att.model.save("semisup_model_pgd20.pth")
         max_robust = robust_accuracy
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
       att.schedule.step()
 
     if robust_accuracy > max_robust:  
-        att.model.save("fgsm_128_decay5e-4_unieps_lr0.1_40-50-65.pth")
+        att.model.save("semisup_model_pgd20.pth")
         max_robust = robust_accuracy
     
     ## Make sure the model is in `eval` mode.
     att.model.eval()
 
-    pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device)
+    pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device, loss_type = "ce")
         
     calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
     
     # part 2 of the assignment
     # eps = args.eps / 255
     # # load attack 
-    # from autoattack import AutoAttack
+    
     # adversary = AutoAttack(model, norm=args.norm, eps=eps, log_path=args.log_path,
     #     version='standard', device=args.device)
-    # 
+    
     # l = [x for (x, y) in test_loader]
     # x_test = torch.cat(l, 0)
     # l = [y for (x, y) in test_loader]
     # y_test = torch.cat(l, 0)
-    # 
+    
     # adv_complete = adversary.run_standard_evaluation(x_test, y_test, bs=args.batch_size)
 
 
