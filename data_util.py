@@ -1,4 +1,5 @@
 from semisup_util import PseudoLabelDataset
+from semisup_util import PseudoOGMixDataset
 from torchvision.datasets import CIFAR10
 from torch.utils.data import DataLoader, Subset
 import torch
@@ -62,6 +63,24 @@ def ti500k_dataloader(batch_size=64):
     ])
 
     custom_train_dataset = PseudoLabelDataset(transform = train_transform)
+    custom_dataset_len = len(custom_train_dataset)
+    
+    train_set = Subset(custom_train_dataset, list(range(custom_dataset_len)))
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    
+    return train_loader
+
+def ti500k_and_ogdata_dataloader(batch_size=64):
+    '''Tiny Images 500k dataloader for training and testing'''
+    
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+    ])
+
+    custom_train_dataset = PseudoOGMixDataset(transform = train_transform)
     custom_dataset_len = len(custom_train_dataset)
     
     train_set = Subset(custom_train_dataset, list(range(custom_dataset_len)))

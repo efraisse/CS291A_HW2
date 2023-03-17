@@ -24,7 +24,7 @@ def parse_args():
         '--data_dir', default='./data/', type=str, help="Folder to store downloaded dataset"
     )
     parser.add_argument(
-        '--model_path', default='resnet_cifar10.pth', help='Filepath to the trained model'
+        '--model_path', default='models/resnet_cifar10.pth', help='Filepath to the trained model'
     )
     parser.add_argument(
         '--batch_size', type=int, default=128, help='Batch size for attack'
@@ -73,8 +73,10 @@ def main():
     args = parse_args()
     
     # Load data
+    # redeclare the semisup_train_loader and semisup_ogdata_mix inside the epochs to reshuffle the data
     semisup_train_loader = data_util.ti500k_dataloader(batch_size = args.batch_size)
     train_loader, val_loader, test_loader, norm_layer = data_util.cifar10_dataloader(batch_size = args.batch_size, data_dir=args.data_dir)
+    semisup_ogdata_mix = data_util.ti500k_and_ogdata_dataloader(batch_size = args.batch_size)
     model = model_util.ResNet18(num_classes=10)
     model.normalize = norm_layer
     model.load(args.model_path, args.device)
@@ -83,23 +85,35 @@ def main():
     # model.eval()
 
     # TODO Add params from args
-    att = attack_util.AT(model = model, device = args.device, steps = 10)
-    nepochs = 50
+    att = attack_util.AT(model = model, device = args.device, steps = 50)
+    nepochs = 25
     
     max_robust = 0
 
     # TODO Add params from args
     # PGD
-    pgd_attack = attack_util.PGDAttack(device = args.device)
+    pgd_attack = attack_util.PGDAttack(device = args.device, attack_step = 50)
     # pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
     calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
+    
+    # going to halve the linear schedule so instead of 75/90/100 will do 30/45/50
+    # for the 4684 model, will start with learning rate 0.01 for 30 epochs and then again at 45
+    # for the 4684 PGD50 model, will start with regular learning rate for 10 epochs, then drop to 20, then 30?
+    # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix.pth"
+    # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model.pth"
+    model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model_50PGD.pth"
 
     for epoch in range(nepochs):
       loss = 0
+      
+      semisup_ogdata_mix = data_util.ti500k_and_ogdata_dataloader(batch_size = args.batch_size)
 
-      with tqdm(total=len(train_loader)) as pbar:
-          for X, y in train_loader:
+      with tqdm(total=len(semisup_ogdata_mix)) as pbar:
+          for X, y in semisup_ogdata_mix:
+
+    #   with tqdm(total=len(train_loader)) as pbar:
+    #       for X, y in train_loader:
           
     #   with tqdm(total=len(semisup_train_loader)) as pbar:
     #       for X, y in semisup_train_loader:
@@ -112,14 +126,14 @@ def main():
       _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
           
       if robust_accuracy > max_robust:  
-        att.model.save("semisup_model_pgd10_TRADES_ogdata.pth")
+        att.model.save(model_name)
         max_robust = robust_accuracy
           
       print(f"Finished epoch {epoch + 1}/{nepochs}")
       att.schedule.step()
 
     if robust_accuracy > max_robust:  
-        att.model.save("semisup_model_pgd10_TRADES_ogdata.pth")
+        att.model.save(model_name)
         max_robust = robust_accuracy
     
     ## Make sure the model is in `eval` mode.

@@ -281,9 +281,9 @@ class AT():
         self.lr = lr
         self.momentum = momentum
         self.model = model
-        self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
+        self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=2e-4)
         # self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
-        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[20,35,43], gamma=0.1)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[10,20], gamma=0.1)
         self.device = device
 
     def train_step(self, model, X, y):
@@ -295,6 +295,25 @@ class AT():
         # forward + backward + optimize
         outputs = self.model(X + delta)
         # loss = self.criterion(outputs, y)
+        # model 1:
+        # exactly from trades paper with below parameters from og data
+        # model 2:
+        # exactly from trades paper with pgd 10, epsilon 16, step_size 4/255, og data
+        # model 3:
+        # exactly from trades paper with below parameters from unsup data
+        
+        # model 1:
+        # combine data loaders with half data from og data and the rest from semi sup
+        # every epoch resample a different half of the data from the semi sup model
+        # train this on the original model
+        # model 2:
+        # train with lower learning rate on the concatenated data with the model that achieved 46.84 accuracy
+        # model 3:
+        # train the model that got 46.84 accuracy on 50 step pgd with combined data
+        
+        # from TRADES paper, beta = 6, attack_steps = 20,
+        # learning schedule = 75, 90, 100
+        # decay = 2e-4
         loss = trades.trades_loss(model=model,
                            x_natural=X,
                            y=y,
@@ -302,7 +321,7 @@ class AT():
                            step_size=self._pgd_attack._alpha,
                            epsilon=self._pgd_attack._eps,
                            perturb_steps=self._pgd_attack._attack_step,
-                           beta=5,
+                           beta=6,
 			               distance='l_inf',
                            device = self.device)
         loss.backward()
