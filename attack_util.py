@@ -274,7 +274,7 @@ class FGSMAttack():
 class AT():
     """
     """
-    def __init__(self, lr=0.1, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None, device = "cuda:0"):
+    def __init__(self, lr=0.01, alpha=2/255, eps=8/255, steps=10, momentum=0.9, model=None, device = "cuda:0"):
         self._pgd_attack = PGDAttack(eps=eps, attack_step=steps, alpha=alpha, device = device)
         #self._pgd_attack = PGDAttack(eps=eps, attack_step=1, alpha=eps, device = device)
         self.criterion = nn.CrossEntropyLoss()
@@ -283,7 +283,7 @@ class AT():
         self.model = model
         self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=2e-4)
         # self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
-        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[10,20], gamma=0.1)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[30,45], gamma=0.1)
         self.device = device
 
     def train_step(self, model, X, y):

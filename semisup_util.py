@@ -37,8 +37,9 @@ class PseudoOGMixDataset(Dataset):
         pi_500k_dataset = pd.read_pickle(file_path_ti_500k)
         
         # original CIFAR10 dataset and the semisup dataset
-        self.og_data = CIFAR10(data_dir, train=True).data
-        self.og_labels = CIFAR10(data_dir, train=True).targets
+        # exclude the validation set info this time
+        self.og_data = CIFAR10(data_dir, train=True).data[0:45000]
+        self.og_labels = CIFAR10(data_dir, train=True).targets[0:45000]
         self.semisup_data = pi_500k_dataset["data"]
         self.semisup_labels = pi_500k_dataset["extrapolated_targets"]
         

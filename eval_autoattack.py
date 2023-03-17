@@ -85,14 +85,14 @@ def main():
     # model.eval()
 
     # TODO Add params from args
-    att = attack_util.AT(model = model, device = args.device, steps = 50)
-    nepochs = 25
+    att = attack_util.AT(model = model, device = args.device)
+    nepochs = 50
     
     max_robust = 0
 
     # TODO Add params from args
     # PGD
-    pgd_attack = attack_util.PGDAttack(device = args.device, attack_step = 50)
+    pgd_attack = attack_util.PGDAttack(device = args.device)
     # pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
     calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
@@ -102,7 +102,7 @@ def main():
     # for the 4684 PGD50 model, will start with regular learning rate for 10 epochs, then drop to 20, then 30?
     # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix.pth"
     # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model.pth"
-    model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model_50PGD.pth"
+    model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model_NOVAL.pth"
 
     for epoch in range(nepochs):
       loss = 0
