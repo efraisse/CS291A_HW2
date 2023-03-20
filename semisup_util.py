@@ -50,8 +50,8 @@ class PseudoOGMixDataset(Dataset):
         self.semisup_labels = self.semisup_labels[randomize]
         
         # grab length of CIFAR10 dataset of first elements
-        sample_semisup_data = self.semisup_data[0:len(self.og_data)]
-        sample_semisup_labels = self.semisup_labels[0:len(self.og_labels)]
+        sample_semisup_data = self.semisup_data[0:len(self.og_data)*3]
+        sample_semisup_labels = self.semisup_labels[0:len(self.og_labels)*3]
     
         # combine the labels and images of both datasets
         self.transform = transform

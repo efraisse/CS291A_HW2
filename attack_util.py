@@ -283,7 +283,7 @@ class AT():
         self.model = model
         self.optimizer = SGD_GC(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=2e-4)
         # self.optimizer = optim.SGD(model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=5e-4)
-        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[30,45], gamma=0.1)
+        self.schedule = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[20,30], gamma=0.1)
         self.device = device
 
     def train_step(self, model, X, y):
@@ -321,7 +321,7 @@ class AT():
                            step_size=self._pgd_attack._alpha,
                            epsilon=self._pgd_attack._eps,
                            perturb_steps=self._pgd_attack._attack_step,
-                           beta=6,
+                           beta=7,
 			               distance='l_inf',
                            device = self.device)
         loss.backward()

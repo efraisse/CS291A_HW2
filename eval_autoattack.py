@@ -85,77 +85,77 @@ def main():
     # model.eval()
 
     # TODO Add params from args
-    att = attack_util.AT(model = model, device = args.device)
-    nepochs = 50
+    # att = attack_util.AT(model = model, device = args.device)
+    # nepochs = 50
     
-    max_robust = 0
+    # max_robust = 0
 
     # TODO Add params from args
     # PGD
-    pgd_attack = attack_util.PGDAttack(device = args.device)
+    # pgd_attack = attack_util.PGDAttack(device = args.device)
     # pgd_attack = attack_util.PGDAttack(device = args.device, alpha=args.eps, attack_step = 1)
 
-    calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
+    # calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
     
     # going to halve the linear schedule so instead of 75/90/100 will do 30/45/50
     # for the 4684 model, will start with learning rate 0.01 for 30 epochs and then again at 45
     # for the 4684 PGD50 model, will start with regular learning rate for 10 epochs, then drop to 20, then 30?
     # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix.pth"
     # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model.pth"
-    model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model_NOVAL.pth"
+    # model_name = "TRADES_OGPARAMS_semisup_ogdata_mix_4684model_NOVAL_3-4unsup.pth"
 
-    for epoch in range(nepochs):
-      loss = 0
+    # for epoch in range(nepochs):
+    #   loss = 0
       
-      semisup_ogdata_mix = data_util.ti500k_and_ogdata_dataloader(batch_size = args.batch_size)
+    #   semisup_ogdata_mix = data_util.ti500k_and_ogdata_dataloader(batch_size = args.batch_size)
 
-      with tqdm(total=len(semisup_ogdata_mix)) as pbar:
-          for X, y in semisup_ogdata_mix:
+    #   with tqdm(total=len(semisup_ogdata_mix)) as pbar:
+    #       for X, y in semisup_ogdata_mix:
 
-    #   with tqdm(total=len(train_loader)) as pbar:
-    #       for X, y in train_loader:
+    # #   with tqdm(total=len(train_loader)) as pbar:
+    # #       for X, y in train_loader:
           
-    #   with tqdm(total=len(semisup_train_loader)) as pbar:
-    #       for X, y in semisup_train_loader:
-              X, y = X.to(args.device), y.to(args.device)
-              loss = att.train_step(model, X, y)
+    # #   with tqdm(total=len(semisup_train_loader)) as pbar:
+    # #       for X, y in semisup_train_loader:
+    #           X, y = X.to(args.device), y.to(args.device)
+    #           loss = att.train_step(model, X, y)
               
-              pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
-              pbar.update(1)
+    #           pbar.set_description(f"Epoch {epoch+1}/{nepochs} Loss - {round(loss, 2)}")
+    #           pbar.update(1)
 
-      _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
+    #   _, robust_accuracy = calculate_clean_and_robust_accuracy(pgd_attack, att.model, val_loader, args.device)
           
-      if robust_accuracy > max_robust:  
-        att.model.save(model_name)
-        max_robust = robust_accuracy
+    #   if robust_accuracy > max_robust:  
+    #     att.model.save(model_name)
+    #     max_robust = robust_accuracy
           
-      print(f"Finished epoch {epoch + 1}/{nepochs}")
-      att.schedule.step()
+    #   print(f"Finished epoch {epoch + 1}/{nepochs}")
+    #   att.schedule.step()
 
-    if robust_accuracy > max_robust:  
-        att.model.save(model_name)
-        max_robust = robust_accuracy
+    # if robust_accuracy > max_robust:  
+    #     att.model.save(model_name)
+    #     max_robust = robust_accuracy
     
-    ## Make sure the model is in `eval` mode.
-    att.model.eval()
+    # ## Make sure the model is in `eval` mode.
+    # att.model.eval()
 
-    pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device, loss_type = "ce")
+    # pgd_attack = attack_util.PGDAttack(attack_step = 50, device = args.device, loss_type = "cw", targeted = False)
         
-    calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
+    # calculate_clean_and_robust_accuracy(pgd_attack, att.model, test_loader, args.device)
     
     # part 2 of the assignment
-    # eps = args.eps / 255
-    # # load attack 
+    eps = args.eps / 255
+    # load attack 
     
-    # adversary = AutoAttack(model, norm=args.norm, eps=eps, log_path=args.log_path,
-    #     version='standard', device=args.device)
+    adversary = AutoAttack(model, norm=args.norm, eps=eps, log_path=args.log_path,
+        version='standard', device=args.device)
     
-    # l = [x for (x, y) in test_loader]
-    # x_test = torch.cat(l, 0)
-    # l = [y for (x, y) in test_loader]
-    # y_test = torch.cat(l, 0)
+    l = [x for (x, y) in test_loader]
+    x_test = torch.cat(l, 0)
+    l = [y for (x, y) in test_loader]
+    y_test = torch.cat(l, 0)
     
-    # adv_complete = adversary.run_standard_evaluation(x_test, y_test, bs=args.batch_size)
+    adv_complete = adversary.run_standard_evaluation(x_test, y_test, bs=args.batch_size)
 
 
 if __name__ == "__main__":
